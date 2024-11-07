@@ -2,14 +2,14 @@
 
 
 
-# Test Package code, scRNA-seq workshop
-#-------------------------------------------------------------------------------
+# Test Package code, scRNA-seq workshop                          ###############
+#______________________________________________________________________________
 # This code produces all figures in the slides for the workshop and tests if 
 # packages required for workshop is functional.
 
 
-# Instructions
-#-------------------------------------------------------------------------------
+# Instructions                                                ##################
+#_______________________________________________________________________________
 # 1. Set current working directory to the location of this source file.
 # 2. Run this script.
 # 3. If you encounter errors, 
@@ -26,7 +26,6 @@ library(presto)
 library(scAnnotatR)
 library(SingleR)
 library(celldex)
-library(monocle3)
 library(SeuratWrappers)
 library(cowplot)
 require(DESeq2)
@@ -41,7 +40,7 @@ here::i_am("README.md")
 dir.create(here::here("_temp_data"))
 
 
-# scRNA-seq Dataset Importation ################################################
+# scRNA-seq Dataset Importation                                     ############
 #_______________________________________________________________________________
 # Example small dataset (real data)
 # Used from this tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial
@@ -77,7 +76,8 @@ VlnPlot(srat, features = "percent.mt", ncol = 3)
 VlnPlot(srat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
         ncol = 3)
 
-## Filter poor quality cells ###################################################
+## Filter poor quality cells                          ##########################
+#_______________________________________________________________________________
 # nFeature_RNA > 200: removes empty droplets or cells with little RNA
 # nFeature_RNA < 25000: remove doublets (droplets with 2+ cells)
 # percent.mt < 5: removes cells with over 5% mitochondrial DNA 
@@ -86,7 +86,8 @@ srat <- subset(srat, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 &
                  percent.mt < 5)
 
 
-## Normalize data ##############################################################
+## Normalize data                                     ##########################
+#_______________________________________________________________________________
 # 1. Normalizes gene expression by the total expression in each cell
 # 2. Multiplies this by a scale factor (10,000 by default)
 # 3. Log-transforms the result.
@@ -94,11 +95,13 @@ srat <- subset(srat, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 &
 srat <- NormalizeData(srat, normalization.method = "LogNormalize", 
                       scale.factor = 10000)
 
-## Feature Selection ###########################################################
+## Feature Selection                                #############################
+#_______________________________________________________________________________
 # Identify highly variables genes, (to be used for dimension reduction)
 srat <- FindVariableFeatures(srat, selection.method = "vst", nfeatures = 2000)
 
-## Scale the data (across cells, only selected variable features) ##############
+## Scale the data                                                 ##############
+#_______________________________________________________________________________
 # Essentially converts gene expression to z-score (normalize by mean and std 
 # across cells)
 # Stored in: srat[["RNA"]]$scale.data
@@ -113,7 +116,7 @@ srat <- ScaleData(srat, features = rownames(srat))
 # srat <- ScaleData(srat, vars.to.regress = "percent.mt")
 
  
-## Linear dimension reduction (PCA) ############################################
+## PCA: Linear dimension reduction ############################################
 #_______________________________________________________________________________
 srat <- RunPCA(srat, features = VariableFeatures(object = srat))
 # Plot commands: VizDimReduction(), DimPlot(), and DimHeatmap()
@@ -125,6 +128,39 @@ DimPlot(srat, reduction = "pca") + NoLegend()
 # Maximize the signal (biological variability) to the noise (other sources of 
 # variation)
 ElbowPlot(srat)
+
+
+
+## Dataset Integration (Simulated) ##############################################
+#_______________________________________________________________________________
+# For illustrative purposes, let's simulate having data from two conditions
+# We can combine the data between them and instruct seurat to normalize the data
+# To make comparable.
+#  Groups: 0: control, 1: treatment
+# We can do this by adding a factor to the seurat metadata
+set.seed(0)
+srat_int <- srat
+srat_int@meta.data$group_id = factor(rbinom(n = ncol(srat_int), size = 1, 
+                                            prob = 0.5 ), labels = c("Ctrl","Tx"))
+# Split dataset based on factor column in metadata
+srat_int[["RNA"]] <- split(srat_int[["RNA"]], f = srat_int$group_id)
+# Integrate datasets together in seurat object
+srat_int <- 
+  IntegrateLayers(srat_int, method = CCAIntegration, orig.reduction = "pca", 
+                  new.reduction = "integrated.cca", verbose = FALSE)
+# Re-join layers after integration
+srat_int[["RNA"]] <- JoinLayers(srat_int[["RNA"]])
+# Rerun pipeline
+srat_int <- FindNeighbors(srat_int, dims = 1:10)
+srat_int <- FindClusters(srat_int, resolution = 0.5)
+srat_int <- RunUMAP(srat_int, dims= 1:10)
+# Visualize UMAP clusters
+DimPlot(srat_int, reduction = "umap", label = TRUE,
+        repel = TRUE)
+# Overwrite seurat object for downstream steps
+srat <- srat_int
+
+
 
 
 ## Clustering ##################################################################
@@ -145,7 +181,8 @@ srat <- FindClusters(srat, resolution = 0.5)
 DimPlot(srat, reduction = "pca") + NoLegend()
 
 
-# Perform UMAP clustering
+## UMAP: Nonliner Dimension Reduction                       #######################
+#_______________________________________________________________________________
 srat <- RunUMAP(srat, dims= 1:10)
 
 # Visualize UMAP clusters
@@ -189,38 +226,6 @@ DimPlot(srat, reduction = "umap", label = TRUE, repel = TRUE)
 #                      gg,  base_height = 3, base_width = 3)
 #   
 # }
-
-
-# Dataset Integration (Simulated) ##############################################
-#_______________________________________________________________________________
-# For illustrative purposes, let's simulate having data from two conditions
-# We can combine the data between them and instruct seurat to normalize the data
-# To make comparable.
-#  Groups: 0: control, 1: treatment
-# We can do this by adding a factor to the seurat metadata
-set.seed(0)
-srat_int <- srat
-srat_int@meta.data$group_id = factor(rbinom(n = ncol(srat_int), size = 1, 
-                                            prob = 0.5 ), labels = c("Ctrl","Tx"))
-# Split dataset based on factor column in metadata
-srat_int[["RNA"]] <- split(srat_int[["RNA"]], f = srat_int$group_id)
-# Integrate datasets together in seurat object
-srat_int <- 
-  IntegrateLayers(srat_int, method = CCAIntegration, orig.reduction = "pca", 
-                  new.reduction = "integrated.cca", verbose = FALSE)
-# Re-join layers after integration
-srat_int[["RNA"]] <- JoinLayers(srat_int[["RNA"]])
-# Rerun pipeline
-srat_int <- FindNeighbors(srat_int, dims = 1:10)
-srat_int <- FindClusters(srat_int, resolution = 0.5)
-srat_int <- RunUMAP(srat_int, dims= 1:10)
-# Visualize UMAP clusters
-DimPlot(srat_int, reduction = "umap", label = TRUE,
-        repel = TRUE)
-# Overwrite seurat object for downstream steps
-srat <- srat_int
-
-
 
 
 # Cluster Marker Identification ################################################

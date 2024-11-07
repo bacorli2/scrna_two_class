@@ -11,7 +11,8 @@
 # 1. Install latest version of R
 # 2. Install latest version of R Studio
 # 3. Windows OS: install RTools
-# 4. Run this script by each code-chunk manually.
+# 4. Run this script by each code-chunk manually (not all at once, you obly have
+#.   a limited number of github installs before getting blocked.
 
 
 # Install package maanager for bio-conductor
@@ -23,7 +24,7 @@ if (!require("BiocManager", quietly = TRUE)) {install.packages("BiocManager") }
 # up-date packages.
 BiocManager::valid()
 
-# Print out what version of bioconductor manager you have, should by 3.18
+# Print out what version of bioconductor manager you have, should be 3.18
 BiocManager::version()
 
 
@@ -31,7 +32,7 @@ BiocManager::version()
 #-------------------------------------------------------------------------------
 
 # Base Packages
-base_packages <- c("cli","tidyverse", "BiocManager", "cowplot", "here", "R.utils",
+base_packages <- c("cli","tidyverse", "cowplot", "here", "R.utils",
                    "HGNChelper","openxlsx", "devtools","VGAM", "metap")
 base_installs <- install.packages(setdiff(base_packages, 
                                           rownames(installed.packages())), 
@@ -83,22 +84,22 @@ remotes::install_github("mojaveazure/seurat-disk")
 remotes::install_github("satijalab/seurat-wrappers")
 
 
-# Monocle 3 Developer Package and Dependencies
-#-------------------------------------------------------------------------------
-# Install github released version of monocle3 then supporting packages
-BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
-                       'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
-                       'SummarizedExperiment', 'batchelor', 'HDF5Array',
-                       'terra', 'ggrastr', "qlcMatrix"))
-# qlcMatrix may not be available for latest version of R
-devtools::install_github("cysouw/qlcMatrix")
-
-devtools::install_github('cole-trapnell-lab/monocle3')
-
-# Then install github developer release second
-devtools::install_github('cole-trapnell-lab/monocle3', ref="develop")
-# Presto is used for accelerating cluster marker identification
-devtools::install_github('immunogenomics/presto')
+# # Monocle 3 Developer Package and Dependencies
+# #-------------------------------------------------------------------------------
+# # Install github released version of monocle3 then supporting packages
+# BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
+#                        'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
+#                        'SummarizedExperiment', 'batchelor', 'HDF5Array',
+#                        'terra', 'ggrastr', "qlcMatrix"))
+# # qlcMatrix may not be available for latest version of R
+# devtools::install_github("cysouw/qlcMatrix")
+# 
+# devtools::install_github('cole-trapnell-lab/monocle3')
+# 
+# # Then install github developer release second
+# devtools::install_github('cole-trapnell-lab/monocle3', ref="develop")
+# # Presto is used for accelerating cluster marker identification
+# devtools::install_github('immunogenomics/presto')
 
 
 # scPred Developer Package
